@@ -3,6 +3,7 @@ import { uploadFile } from "../config/s3";
 import { AuthenticatedRequest } from "../middlewares/authMiddleware";
 import { prisma } from "../config/database";
 import { triggerSNS } from "../middlewares/snsMiddleware";
+import { embedQuery, openai, PineconeIndex } from "../util/helper";
 
 export class ChatController {
   async uploadPdf(req: Request, res: Response) {
@@ -84,6 +85,148 @@ export class ChatController {
       res.status(500).send({ message: "Error listing user documents", error });
       return;
     }
+  }
+
+  async getChatSessions(req: Request, res: Response) {
+    const user = (req as AuthenticatedRequest).user;
+    const { documentId } = req.params;
+
+    if (!documentId) {
+      return res.status(400).json({ message: "documentId required" });
+    }
+
+    const sessions = await prisma.chatSession.findMany({
+      where: {
+        documentId,
+        userId: user.sub,
+      },
+    });
+
+    return res.status(200).json({
+      message: "Sessions fetched successfully",
+      sessions: sessions,
+    });
+  }
+
+  async createChatSession(req: Request, res: Response) {
+    const user = (req as AuthenticatedRequest).user;
+    const { documentId } = req.body;
+
+    if (!documentId) {
+      return res.status(400).json({ message: "documentId required" });
+    }
+
+    const session = await prisma.chatSession.create({
+      data: {
+        id: crypto.randomUUID(),
+        title: "New Chat",
+        documentId,
+        userId: user.sub,
+      },
+    });
+
+    return res.status(200).json({
+      message: "Session created",
+      sessionId: session.id,
+    });
+  }
+
+  async queryChat(req: Request, res: Response) {
+    const user = (req as AuthenticatedRequest).user;
+    const { sessionId, query } = req.body;
+
+    if (!query || !sessionId) {
+      return res.status(400).json({ message: "sessionId and query required" });
+    }
+
+    const session = await prisma.chatSession.findUnique({
+      where: { id: sessionId },
+      include: { document: true },
+    });
+
+    if (!session || session.userId !== user.sub) {
+      return res.status(404).json({ message: "Session not found" });
+    }
+
+    const vector = await embedQuery(query);
+
+    const results = await PineconeIndex.namespace(`user_${user.sub}`).query({
+      vector,
+      topK: 5,
+      includeMetadata: true,
+    });
+
+    const context = results.matches
+      .map((m: any) => m.metadata?.text || "")
+      .join("\n\n");
+
+    await prisma.chatMessage.create({
+      data: {
+        sessionId,
+        role: "user",
+        content: query,
+      },
+    });
+
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.flushHeaders();
+
+    let aiResponseText = "";
+
+    const systemPrompt = `You are an AI assistant. Use the context below to answer.
+
+    // CONTEXT:
+    // ${context}
+    // `;
+
+    const stream = await openai.chat.completions.create({
+      model: "gpt-4.1-mini",
+      stream: true,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: query },
+      ],
+    });
+
+    for await (const chunk of stream) {
+      const token = chunk.choices?.[0]?.delta?.content || "";
+
+      aiResponseText += token;
+
+      res.write(`data: ${token}\n\n`);
+    }
+
+    res.write("data: [DONE]\n\n");
+    res.end();
+
+    await prisma.chatMessage.create({
+      data: {
+        sessionId,
+        role: "assistant",
+        content: aiResponseText,
+      },
+    });
+  }
+
+  async getChatSessionMessages(req: Request, res: Response) {
+    const { id } = req.params;
+
+    if (!id) {
+      return res.status(400).json({ message: "id required" });
+    }
+
+    const messages = await prisma.chatMessage.findMany({
+      where: {
+        sessionId: id,
+      },
+    });
+
+    return res.status(200).json({
+      message: "Messages fetched successfully",
+      messages: messages,
+    });
   }
 }
 

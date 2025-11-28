@@ -41,6 +41,8 @@ custom:
   serverless-offline:
     httpPort: 8080
     noPrependStageInUrl: true
+    lamdaTimeout: 300
+    noTimeout: true
 
 functions:
   api:

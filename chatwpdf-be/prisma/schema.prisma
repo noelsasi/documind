@@ -19,18 +19,48 @@ model Todo {
 }
 
 model Document {
-  id        String   @id @default(uuid())
-  filename  String
-  fileSize  Int
-  fileUrl   String
-  s3Key     String
-  mimeType  String?
-  status    String   @default("processing") // processing, completed, failed
-  userId    String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String        @id @default(uuid())
+  filename     String
+  fileSize     Int
+  fileUrl      String
+  s3Key        String
+  mimeType     String?
+  status       String        @default("processing") // processing, completed, failed
+  userId       String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  chatSessions ChatSession[]
 
   @@index([userId])
   @@index([status])
   @@map("documents")
+}
+
+model ChatSession {
+  id         String        @id @default(uuid())
+  userId     String
+  documentId String
+  title      String?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  document   Document      @relation(fields: [documentId], references: [id])
+  messages   ChatMessage[]
+
+  @@index([documentId])
+  @@index([userId])
+  @@map("chat_sessions")
+}
+
+model ChatMessage {
+  id        String   @id @default(uuid())
+  role      String   @default("user") // user, assistant
+  content   String
+  createdAt DateTime @default(now())
+
+  sessionId String
+  session   ChatSession @relation(fields: [sessionId], references: [id])
+
+  @@index([sessionId])
+  @@index([createdAt])
+  @@map("chat_messages")
 }
