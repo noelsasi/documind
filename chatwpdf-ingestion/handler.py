@@ -60,32 +60,41 @@ def chunk_text(text, chunk_size=800, overlap=150):
 # ---------------------------
 
 def normalize_text(t: str):
-    """Make text safe for UTF-8 and remove invalid characters."""
+    """Strong normalization: remove ALL non-UTF8-safe chars, bullets, symbols."""
     if not t:
         return ""
 
-    # Replace common problematic characters from PDFs
+    # Basic replacements
     replacements = {
         "’": "'",
+        "‘": "'",
         "“": "\"",
         "”": "\"",
         "–": "-",
         "—": "-",
         "•": "-",
-        "\xa0": " ",  # non-breaking space
+        "●": "-",  # <--- FIX for your current error
+        "\xa0": " "
     }
-
     for bad, good in replacements.items():
         t = t.replace(bad, good)
 
-    # Normalize Unicode (remove accents but preserve normal chars)
-    t = unicodedata.normalize("NFKD", t)
+    # Remove ANY character not encodable in Latin-1 (Pinecone HTTP fallback)
+    safe_chars = []
+    for ch in t:
+        try:
+            ch.encode("latin-1")
+            safe_chars.append(ch)
+        except:
+            safe_chars.append(" ")  # replace unsupported chars with space
 
-    # Force UTF-8 clean (removes anything non-UTF-8 encodable)
+    t = "".join(safe_chars)
+
+    # Final UTF-8 normalization
+    t = unicodedata.normalize("NFKD", t)
     t = t.encode("utf-8", "ignore").decode("utf-8", "ignore")
 
     return t.strip()
-
 
 def extract_text_from_pdf(pdf_bytes):
     """Extract text from PDF bytes"""
@@ -158,7 +167,8 @@ def ingestPdf(event, context):
                             'fileId': file_id,
                             'userId': user_id,
                             'chunkIndex': chunk_id,
-                            'pageNumber': page_num
+                            'pageNumber': page_num,
+                            'text': cleaned
                         }
                     })
                     chunk_id += 1
