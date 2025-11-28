@@ -1,0 +1,69 @@
+org: noel4ver
+service: chatwpdf-ingestion
+
+provider:
+  name: aws
+  runtime: python3.12
+  region: ${env:AWS_REGION}
+  timeout: 300
+  memorySize: 1024
+  environment:
+    PINECONE_API_KEY: ${env:PINECONE_API_KEY}
+    PINECONE_INDEX_NAME: ${env:PINECONE_INDEX_NAME}
+    DATABASE_URL: ${env:DATABASE_URL}
+
+plugins:
+  - serverless-python-requirements
+
+package:
+  individually: false
+  excludeDevDependencies: true
+  patterns:
+    - "!venv/**"
+    - "!node_modules/**"
+    - "!.env"
+    - "!test-local.py"
+    - "!README.md"
+    - "!.requirements.zip"
+    - "!.gitignore"
+    - "!package.json"
+    - "!package-lock.json"
+    - "!.serverless/**"
+    - "!.git/**"
+    - "!**/__pycache__/**"
+    - "handler.py"
+    - "requirements.txt"
+
+custom:
+  pythonRequirements:
+    dockerizePip: true
+    slim: true
+    strip: true # Changed to true - strips debug symbols
+    zip: false # Zips dependencies separately
+    layer: false # Puts dependencies in Lambda layer (best option)
+    usePoetry: false
+    useDownloadCache: true
+    useStaticCache: true
+    pipCmdExtraArgs:
+      - --no-cache-dir
+    noDeploy:
+      - boto3
+      - botocore
+      - docutils
+      - jmespath
+      - pip
+      - python-dateutil
+      - s3transfer
+      - setuptools
+      - six
+      - urllib3
+      - dotenv
+
+functions:
+  ingestPdf:
+    handler: handler.ingestPdf
+    role: arn:aws:iam::${aws:accountId}:role/lambdaBasicExecutionRole
+    events:
+      - sns:
+          arn: arn:aws:sns:${env:AWS_REGION}:${aws:accountId}:doc-ingestion-topic
+          topicName: doc-ingestion-topic
