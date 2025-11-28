@@ -1,0 +1,17 @@
+{
+    "watch": [
+        "src",
+        ".env"
+    ],
+    "ext": "ts,js,json",
+    "ignore": [
+        "node_modules",
+        "dist",
+        ".build"
+    ],
+    "exec": "serverless offline",
+    "env": {
+        "NODE_ENV": "development"
+    },
+    "delay": "1000"
+}

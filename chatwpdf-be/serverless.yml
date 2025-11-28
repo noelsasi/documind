@@ -1,0 +1,64 @@
+org: noel4ver
+service: chatwpdf-be
+
+useDotenv: true
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: ${env:AWS_REGION}
+
+  environment:
+    NODE_ENV: ${env:NODE_ENV, "development"}
+    DATABASE_URL: ${env:DATABASE_URL, ''}
+
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - s3:PutObject
+            - s3:GetObject
+            - s3:DeleteObject
+            - s3:ListBucket
+          Resource:
+            - arn:aws:s3:::${env:AWS_S3_BUCKET}/*
+
+build:
+  esbuild:
+    bundle: true
+    minify: true
+    sourcemap: false
+    exclude:
+      - aws-sdk
+      - "@aws-sdk/*"
+    target: node20
+    platform: node
+    external:
+      - pg
+
+custom:
+  serverless-offline:
+    httpPort: 8080
+    noPrependStageInUrl: true
+
+functions:
+  api:
+    handler: src/index.handler
+    role: arn:aws:iam::${aws:accountId}:role/lambdaBasicExecutionRole
+    events:
+      - httpApi: "*"
+
+plugins:
+  - serverless-offline
+
+package:
+  individually: true
+  patterns:
+    - "!node_modules/**"
+    - "!src/**"
+    - "!src/generated/**"
+    - "!.git/**"
+    - "!*.md"
+    - "!tsconfig.json"
+    - "!prisma/**"

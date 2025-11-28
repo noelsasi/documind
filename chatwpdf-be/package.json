@@ -1,0 +1,45 @@
+{
+  "name": "chatwpdf-be",
+  "version": "1.0.0",
+  "description": "Chat with PDF - Backend API",
+  "scripts": {
+    "dev": "nodemon",
+    "offline": "sls offline",
+    "deploy": "sls deploy",
+    "deploy:prod": "sls deploy --stage prod",
+    "logs": "sls logs -f api --tail",
+    "remove": "sls remove",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate:reset": "prisma migrate reset",
+    "prisma:studio": "prisma studio"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.940.0",
+    "@aws-sdk/client-sns": "^3.940.0",
+    "@prisma/adapter-pg": "^7.0.1",
+    "@prisma/client": "^7.0.1",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
+    "express": "^4.19.2",
+    "jose": "^6.1.2",
+    "multer": "^2.0.2",
+    "pg": "^8.16.3",
+    "serverless-http": "^3.2.0",
+    "zod": "^4.1.13"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^4.17.21",
+    "@types/multer": "^2.0.0",
+    "@types/node": "^24.10.1",
+    "@types/pg": "^8.15.6",
+    "nodemon": "^3.1.11",
+    "prisma": "^7.0.1",
+    "serverless-offline": "^14.4.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
+  }
+}
