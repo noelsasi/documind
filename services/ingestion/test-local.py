@@ -3,6 +3,8 @@ Local testing script for the Lambda function
 This allows you to test the handler without deploying to AWS
 """
 import json
+from dotenv import load_dotenv
+load_dotenv()
 from handler import ingestPdf
 
 # Create a mock SNS event

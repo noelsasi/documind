@@ -1,0 +1,5 @@
+pinecone
+PyPDF2
+boto3
+psycopg2-binary
+python-dotenv

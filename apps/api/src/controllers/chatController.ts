@@ -139,6 +139,7 @@ export class ChatController {
       return res.status(400).json({ message: "sessionId and query required" });
     }
 
+    try {
     const session = await prisma.chatSession.findUnique({
       where: { id: sessionId },
       include: { document: true },
@@ -182,7 +183,7 @@ export class ChatController {
     // `;
 
     const stream = await openai.chat.completions.create({
-      model: "gpt-4.1-mini",
+      model: "gpt-5-mini",
       stream: true,
       messages: [
         { role: "system", content: systemPrompt },
@@ -208,6 +209,12 @@ export class ChatController {
         content: aiResponseText,
       },
     });
+    } catch (error) {
+      console.error("queryChat error:", error);
+      if (!res.headersSent) {
+        res.status(500).json({ message: "Query failed", error: error instanceof Error ? error.message : String(error) });
+      }
+    }
   }
 
   async getChatSessionMessages(req: Request, res: Response) {

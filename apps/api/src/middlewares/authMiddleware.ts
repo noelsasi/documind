@@ -20,8 +20,9 @@ export const authenticate = async (
   next: NextFunction
 ) => {
   try {
-    const cookies = req.cookies["stack-access"];
-    const parsedCookies = cookies ? JSON.parse(cookies) : [];
+    // @stackframe/react >= 2.8.108 uses "hexclave-access"; older versions used "stack-access"
+    const cookies = req.cookies["hexclave-access"] ?? req.cookies["stack-access"];
+    const parsedCookies = cookies ? JSON.parse(decodeURIComponent(cookies)) : [];
     const accessToken = parsedCookies[1];
 
     if (!accessToken) {

@@ -7,10 +7,16 @@ provider:
   name: aws
   runtime: nodejs20.x
   region: ${env:AWS_REGION}
+  timeout: 300
 
   environment:
     NODE_ENV: ${env:NODE_ENV, "development"}
     DATABASE_URL: ${env:DATABASE_URL, ''}
+    OPENAI_API_KEY: ${env:OPENAI_API_KEY, ''}
+    PINECONE_API_KEY: ${env:PINECONE_API_KEY, ''}
+    PINECONE_INDEX_NAME: ${env:PINECONE_INDEX_NAME, ''}
+    SNS_TOPIC_ARN: ${env:SNS_TOPIC_ARN, ''}
+    AWS_S3_BUCKET: ${env:AWS_S3_BUCKET, ''}
 
   iam:
     role:
@@ -36,6 +42,8 @@ build:
     platform: node
     external:
       - pg
+      - "@prisma/client/runtime/query_compiler_fast_bg.postgresql.js"
+      - "@prisma/client/runtime/query_compiler_fast_bg.postgresql.wasm-base64.js"
 
 custom:
   serverless-offline:
@@ -59,8 +67,9 @@ package:
   patterns:
     - "!node_modules/**"
     - "!src/**"
-    - "!src/generated/**"
     - "!.git/**"
     - "!*.md"
     - "!tsconfig.json"
     - "!prisma/**"
+    - "node_modules/@prisma/client/runtime/query_compiler_fast_bg.postgresql.js"
+    - "node_modules/@prisma/client/runtime/query_compiler_fast_bg.postgresql.wasm-base64.js"

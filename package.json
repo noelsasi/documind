@@ -1,0 +1,17 @@
+{
+  "name": "chatwpdf",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev --workspace=apps/web",
+    "dev:api": "npm run dev --workspace=apps/api",
+    "deploy:api": "npm run deploy --workspace=apps/api",
+    "deploy:api:prod": "npm run deploy:prod --workspace=apps/api",
+    "deploy:ingestion": "cd services/ingestion && sls deploy",
+    "deploy:ingestion:prod": "cd services/ingestion && sls deploy --stage prod"
+  }
+}
